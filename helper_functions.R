@@ -75,20 +75,30 @@ parse_ldsc_log <- function(path){
   
   tibble(phenotype = pheno, mean_chi2=numbers[1], lambda_gc = numbers[2], max_chi2 = numbers[3])
 }
-parse_ldsc_h2 <- function(path){
-  pheno <- phenotype_getter(path)
-  numbers <- read_tsv(path) %>% 
-    slice(24,25,26,27,28) %>% 
-    pull(1) %>% 
-    # str_extract(., " \\d.\\d\\d\\d") %>% 
-    str_extract(., " \\d.\\d{1,4}") %>%
-    str_remove_all(" ") %>% 
+ldsc_getter <- function(path) {
+  p = phenotype_getter(path)
+  numbers <-
+    read_tsv(path) %>%
+    slice(24,25:28) %>%
+    pull(1) %>%
+    str_extract(" \\d\\.\\d{1,3}") %>%
     as.numeric()
   
-  tibble(phenotype = pheno,
-         obs_h2 = numbers[1], lambda_gc = numbers[2],
-         mean_chi2 = numbers[3], intercept = numbers[4],
-         ratio = numbers[5]
+  h2_se <-
+    read_tsv(path) %>%
+    slice(24) %>%
+    str_extract("\\(\\d.\\d{1,6}") %>%
+    str_remove("\\(") %>%
+    as.numeric()
+  tibble(
+    phenotype = p,
+    obs_h2 = numbers[1],
+    obs_h2_se = h2_se,
+    lambda_gc = numbers[2],
+    mean_chi2 = numbers[3],
+    intercept = numbers[4],
+    ratio = numbers[5],
+    
   )
 }
 
@@ -108,6 +118,27 @@ col_args <- function(colsname) {
   code <-
     c("col_CHR: CHR","col_POS: BP","col_SNP: SNP","col_BETA: BETA",
       "col_EffectAllele: A1","col_OtherAllele: A2","col_P: P", "col_N: N",
+      "col_EAF: FREQ", "col_SE: SE", "col_Z: Z", "col_INFO: INFO", "col_CaseN: NCAS",
+      "col_ControlN: NCON")
+  
+  possible <- c("CHR","BP","SNP","BETA","A1","A2",
+                "P","N","FREQ","SE","Z","INFO", "NCAS",
+                "NCON")
+  
+  vec <- vector("character", length = 12)
+  for(i in seq_along(possible)) {
+    if(any(possible[i] %in% colsname)) {
+      vec[i] <- code[i]
+    }
+  }
+  vec[vec != ""]
+}
+
+col_args2 <- function(colsname) {
+  
+  code <-
+    c("col_CHR: CHR","col_POS: BP","col_SNP: ID","col_BETA: EFFECT",
+      "col_EffectAllele: REF","col_OtherAllele: ALT","col_P: P", "col_N: N",
       "col_EAF: FREQ", "col_SE: SE", "col_Z: Z", "col_INFO: INFO", "col_CaseN: NCAS",
       "col_ControlN: NCON")
   
@@ -161,3 +192,38 @@ construct_metadata_file <- function(path, model="logistic") {
   
 }
 
+
+standard_checks <- function(path) {
+  name <- path_file(path_dir(path))
+  df <- fread(path)
+  checks <- list()
+  if("Z" %in% colnames(df)) {
+    checks[["mean_z"]] = mean(df$Z)
+    checks[["median_z"]] =  median(df$Z)
+    checks[["zero_z"]] =  any(df$Z == 0)
+    
+  }
+  
+  if("B" %in% colnames(df)) {
+    checks[["mean_b"]] = mean(df$B)
+    checks[["median_b"]] =  median(df$B)
+    checks[["zero_b"]] =  any(df$B == 0)
+  }
+  
+  if("EAF" %in% colnames(df)) {
+    checks[["EAF_range"]] = min(df$EAF) > 0 & max(df$EAF) < 1
+  }
+  
+  if("N" %in% colnames(df)) {
+    checks[["unique_n_values"]] = length(unique(df$N))
+  }
+  
+  checks[["p_range"]] <- min(df$P) >= 0 & max(df$P) <= 1
+  checks[["n_min_p"]] <- nrow(filter(df, P ==  min(P)))
+  
+  
+  map2(checks, names(checks), ~tibble({{ .y }} := .x)) %>% 
+    reduce(bind_cols) %>% 
+    add_column(phenotype = name)
+  
+}
