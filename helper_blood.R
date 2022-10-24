@@ -14,12 +14,12 @@ col_args <- function(colsname) {
   
   code <-
     c("col_CHR: CHR","col_POS: BP","col_SNP: ID","col_BETA: EFFECT",
-      "col_EffectAllele: ALT","col_OtherAllele: REF","col_P: PVAL", "col_N: N",
+      "col_EffectAllele: ALT","col_OtherAllele: REF","col_P: P", "col_N: N",
       "col_EAF: ALT_FREQ", "col_SE: SE", "col_Z: Z", "col_INFO: INFO", "col_CaseN: NCAS",
       "col_ControlN: NCON")
   
   possible <- c("CHR_num","BP","ID","EFFECT","ALT","REF",
-                "PVAL","N","ALT_FREQ","SE","Z","INFO", "NCAS",
+                "P","N","ALT_FREQ","SE","Z","INFO", "NCAS",
                 "NCON")
   
   vec <- vector("character", length = 12)
@@ -34,7 +34,7 @@ col_args <- function(colsname) {
 construct_metadata_file <- function(path, model="linear mixed-model") {
   
   
-  test_folder <- "/nas/depts/007/sullilab/shared/gwas_sumstats/run2"
+  test_folder <- "/pine/scr/y/i/yilu/blood_cleanedv2"
   name <- path_ext_remove(path_ext_remove(path_ext_remove(fs::path_file(path))))
   
   # create dir and copy over raw sumstat

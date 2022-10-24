@@ -66,7 +66,9 @@ col_checker <- function(vec) {
   n = "N" %in% vec
   b = "B" %in% vec
   z = "Z" %in% vec
-  tibble(N = n, B = b, Z =z)
+  ncon = "ControlN" %in% vec
+  ncas = "CasezN" %in% vec
+  tibble(N = n, B = b, Z =z, ncon = ncon, ncas=ncas)
 }
 parse_ldsc_log <- function(path){
   pheno = phenotype_getter(path)
