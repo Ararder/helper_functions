@@ -21,7 +21,7 @@ ldsc_munge <- function(infile, N, B = "B") {
       "--a1 EffectAllele ",
       "--a2 OtherAllele ",
       "--N-cas-col CaseN ",
-      "--N-con-col ControlN "
+      "--N-con-col ControlN ",
       "--signed-sumstats {B},0 ",
       "--merge-alleles /nas/depts/007/sullilab/shared/bin/ldsc/w_hm3.snplist ",
       "--chunksize 500000"
