@@ -232,3 +232,32 @@ standard_checks <- function(path) {
     add_column(phenotype = name)
   
 }
+build_getter <- function(path){
+  p = phenotype_getter(path)
+  stats <- read_tsv(path, col_names = FALSE) %>% 
+    mutate(total = sum(X1)) %>% 
+    mutate(pct_match = round(X1/total, 2)) %>% 
+    select(X2, pct_match) %>% 
+    pivot_wider(names_from = X2, values_from = pct_match)
+  add_column(phenotype = p,stats) %>% 
+    select(phenotype, everything())
+}
+step_getter <- function(path) {
+  p = phenotype_getter(path)
+  steps <- read_tsv(path)
+  before <- steps %>% 
+    filter(Steps == "Step1") %>% pull(Before)
+  
+  after <- steps %>% 
+    filter(Steps == "Step19") %>% pull(After)
+  
+  tibble(phenotype = p, before = before, after = after)
+}
+table_getter <- function(path) {
+  p = phenotype_getter(path)
+  stats <- read_tsv(path) %>% 
+    pivot_wider(names_from = ExclusionReason, values_from = NrExcludedRows)
+  add_column(phenotype = p,stats) %>% 
+    select(phenotype, everything())
+  
+}
