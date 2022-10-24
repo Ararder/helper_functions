@@ -102,6 +102,7 @@ ldsc_getter <- function(path) {
     mean_chi2 = numbers[3],
     intercept = numbers[4],
     ratio = numbers[5],
+    se = h2_se,
     
   )
 }
