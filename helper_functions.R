@@ -166,7 +166,7 @@ construct_metadata_file <- function(path, model="logistic") {
   
   
   test_folder <- "/nas/depts/007/sullilab/shared/gwas_sumstats/run2"
-  nname <- path_ext_remove(path_ext_remove(path_ext_remove(fs::path_file(path))))
+  name <- path_ext_remove(path_ext_remove(path_ext_remove(fs::path_file(path))))
   
   # create dir and copy over raw sumstat
   dir <- dir_create(path(test_folder, name))
