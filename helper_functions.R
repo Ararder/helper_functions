@@ -69,7 +69,7 @@ col_checker <- function(vec) {
   ncon = "ControlN" %in% vec
   ncas = "CaseN" %in% vec
   freq <- "EAF" %in% vec
-  info <- "EAF" %in% vec
+  info <- "INFO" %in% vec
   tibble(B = b, Z =z, N = n, ncon = ncon, ncas=ncas, freq=freq, info = info)
 }
 parse_ldsc_log <- function(path){
