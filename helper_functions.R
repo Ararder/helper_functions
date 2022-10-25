@@ -67,8 +67,10 @@ col_checker <- function(vec) {
   b = "B" %in% vec
   z = "Z" %in% vec
   ncon = "ControlN" %in% vec
-  ncas = "CasezN" %in% vec
-  tibble(N = n, B = b, Z =z, ncon = ncon, ncas=ncas)
+  ncas = "CaseN" %in% vec
+  freq <- "EAF" %in% vec
+  info <- "EAF" %in% vec
+  tibble(B = b, Z =z, N = n, ncon = ncon, ncas=ncas, freq=freq, info = info)
 }
 parse_ldsc_log <- function(path){
   pheno = phenotype_getter(path)
@@ -164,10 +166,11 @@ construct_metadata_file <- function(path, model="logistic") {
   
   
   test_folder <- "/nas/depts/007/sullilab/shared/gwas_sumstats/run2"
-  name <- path_ext_remove(path_ext_remove(path_ext_remove(fs::path_file(path))))
+  nname <- path_ext_remove(path_ext_remove(path_ext_remove(fs::path_file(path))))
   
   # create dir and copy over raw sumstat
   dir <- dir_create(path(test_folder, name))
+  
   file_copy(path, dir)
   
   slurm_header <- c(
@@ -178,21 +181,38 @@ construct_metadata_file <- function(path, model="logistic") {
     "#SBATCH --mem=40g",
     glue("#SBATCH --output={dir}/slurm-%j.out")
   )
-  # create the header
+  
+  # create the header for metadata file
   header <- c(
     "cleansumstats_metafile_kind: minimal",
     glue("path_sumStats: {fs::path_file(path)}"),
     glue("stats_Model: {model}")
   )
+  
+  # check what columns exist, and create metadata file based on that
   sumstat_colnames <- colnames(fread(path, nrows=0))
   cols <- col_args(sumstat_colnames)
   
+  # create filepath for metadata, and write it out
   meta_out <- paste0(dir, "/", "meta.txt")
   writeLines(c(header, cols), meta_out)
   
+  # create filepath for job, and add cleansumstats call to it.
   sbatch_out <- paste0(dir, "/run.sh")
   sbatch_job <- make_cleansumstats_job(dir)
-  writeLines(c(slurm_header,sbatch_job), sbatch_out)
+  
+  # add LDSC code to 
+  sumstat_path <- path(dir, name, "cleaned_GRCh38.gz")
+  
+  munge_call <- ldsc_munge(sumstat_path)
+  int_call <- ldsc_intercept(sumstat_path)
+  
+  ldsc <- c("module load ldsc", munge_call, int_call)
+  
+  
+  
+  writeLines(c(slurm_header,sbatch_job,ldsc), sbatch_out)
+  # send the job via slurm
   system(glue("sbatch {sbatch_out}"))
   
 }
@@ -260,4 +280,12 @@ table_getter <- function(path) {
   add_column(phenotype = p,stats) %>% 
     select(phenotype, everything())
   
+}
+fix_p <- function(path){
+  
+df <- dplyr::tibble(data.table::fread(path))
+df %>% 
+  mutate(P = as.numeric(P)) %>% 
+  mutate(P = if_else(P == 0, 2.225074e-304, P)) %>% 
+  write_tsv(path)
 }
